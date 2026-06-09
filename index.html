@@ -57,6 +57,11 @@
             <button id="spin-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-lg text-lg shadow-md transform active:scale-95 transition disabled:opacity-40">
                 SPIN THE WHEEL!
             </button>
+
+            <!-- Back navigation link -->
+            <button id="back-btn" class="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline transition mt-2">
+                ← Change User / View Board
+            </button>
         </div>
 
         <!-- Step 3: Result Modal/Text -->
@@ -137,6 +142,7 @@
         const welcomeUser = document.getElementById('welcome-user');
         const userStatus = document.getElementById('user-status');
         const spinBtn = document.getElementById('spin-btn');
+        const backBtn = document.getElementById('back-btn');
         const canvas = document.getElementById('wheel');
         const ctx = canvas.getContext('2d');
         const resultSection = document.getElementById('result-section');
@@ -160,7 +166,6 @@
         // Initialize/Sync Database in Real-time
         onValue(ref(db, 'draws'), (snapshot) => {
             currentDBState = snapshot.val() || {};
-            // Only update structural positions if the wheel isn't mid-spin or mid-reveal celebration
             if (!isSpinning) {
                 updateAvailableTeams();
                 renderLeaderboard();
@@ -184,6 +189,22 @@
             wheelSection.style.display = 'flex';
             welcomeUser.textContent = `Hey ${selectedUser}!`;
             updateUserFlowStatus();
+        });
+
+        // Handle navigation back to main dropdown setup menu
+        backBtn.addEventListener('click', () => {
+            if (isSpinning) return; // Prevent exiting while spinning
+            
+            // Clear current user state selection
+            selectedUser = "";
+            familySelect.value = "";
+            startBtn.disabled = true;
+
+            // Toggle visibility blocks back to home view
+            wheelSection.style.display = 'none';
+            wheelSection.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            setupSection.classList.remove('hidden');
         });
 
         function updateUserFlowStatus() {
@@ -264,7 +285,8 @@
             
             isSpinning = true;
             spinBtn.disabled = true;
-            resultSection.classList.add('hidden'); // Hide any previous spin text
+            backBtn.disabled = true; // Lock the back button during the draft
+            resultSection.classList.add('hidden'); 
 
             const numSegments = availableTeams.length;
             const winningIndex = Math.floor(Math.random() * numSegments);
@@ -279,7 +301,6 @@
             // 1. Wheel deceleration ends (4000ms)
             setTimeout(() => {
                 
-                // Show the winner text instantly on the screen with pop animation
                 resultSection.classList.remove('hidden');
                 drawnTeamDisplay.textContent = winningTeam;
                 
@@ -290,25 +311,23 @@
                     ruleNotice.textContent = tempDrawCount === 1 ? "You have 1 spin remaining." : "You've drawn your max teams!";
                 }
 
-                // 2. DELAY PHASE: Wait 3 additional seconds for family to see the wheel before it alters!
+                // 2. DELAY PHASE: Wait 3 additional seconds
                 setTimeout(async () => {
                     isSpinning = false;
+                    backBtn.disabled = false; // Re-enable navigation
                     
-                    // Reset wheel position layout silently
                     canvas.style.transition = 'none';
                     const standardDegrees = (360 - targetAngle - 90) % 360;
                     canvas.style.transform = `rotate(${standardDegrees}deg)`;
                     canvas.offsetHeight; 
                     canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
 
-                    // Now push to Firebase (which triggers wheel segment re-calculation safely)
                     const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
                     userDraw.count += 1;
                     userDraw.teams.push(winningTeam);
 
                     await set(ref(db, `draws/${selectedUser}`), userDraw);
                     
-                    // Re-sync states
                     updateAvailableTeams();
                     renderLeaderboard();
                     updateUserFlowStatus();
