@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuddigang Family World Cup 2026 Sweepstakes</title>
     
+    <!-- Tailwind CSS for easy styling -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     
     <style>
@@ -14,51 +15,59 @@
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center p-4">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col items-center p-4">
 
     <header class="text-center my-6">
-        <h1 class="text-3xl font-extrabold text-amber-400">🏆 Cuddigang Family World Cup 2026 🏆</h1>
-        <p class="text-slate-400 text-sm mt-1">Sweepstakes Wheel of Destiny</p>
+        <h1 class="text-3xl font-extrabold text-blue-600">🏆 Cuddigang Family World Cup 2026 🏆</h1>
+        <p class="text-slate-500 text-sm mt-1 font-medium">Sweepstakes Wheel of Destiny</p>
     </header>
 
-    <main class="w-full max-w-md bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
+    <main class="w-full max-w-md bg-white rounded-2xl p-6 shadow-xl border border-slate-200">
+        <!-- Step 1: Select Name -->
         <div id="setup-section" class="space-y-4">
-            <label for="family-select" class="block text-lg font-medium text-slate-200">Who is spinning?</label>
-            <select id="family-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <label for="family-select" class="block text-lg font-medium text-slate-700">Who is spinning?</label>
+            <select id="family-select" class="w-full bg-slate-100 border border-slate-300 rounded-lg p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">-- Select Your Name --</option>
             </select>
-            <button id="start-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-lg transition disabled:opacity-50" disabled>
+            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition disabled:opacity-40" disabled>
                 Proceed to Wheel
             </button>
         </div>
 
+        <!-- Step 2: The Wheel (Hidden initially) -->
         <div id="wheel-section" class="hidden flex flex-col items-center space-y-6">
-            <h2 id="welcome-user" class="text-xl font-bold text-center text-amber-300"></h2>
-            <p id="user-status" class="text-sm text-slate-400 text-center"></p>
+            <h2 id="welcome-user" class="text-xl font-bold text-center text-blue-600"></h2>
+            <p id="user-status" class="text-sm text-slate-500 text-center font-medium"></p>
             
+            <!-- Wheel Container -->
             <div class="relative w-72 h-72 flex items-center justify-center">
-                <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-amber-400 z-10"></div>
-                <canvas id="wheel" width="280" height="280" class="rounded-full shadow-2xl"></canvas>
+                <!-- Pointer -->
+                <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-red-500 z-10"></div>
+                <canvas id="wheel" width="280" height="280" class="rounded-full shadow-lg"></canvas>
             </div>
 
-            <button id="spin-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-lg text-lg shadow-lg transform active:scale-95 transition disabled:opacity-50">
+            <button id="spin-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-lg text-lg shadow-md transform active:scale-95 transition disabled:opacity-40">
                 SPIN THE WHEEL!
             </button>
         </div>
 
-        <div id="result-section" class="hidden text-center space-y-4 pt-4 border-t border-slate-700 mt-4">
-            <h3 class="text-xl font-semibold">🎉 You Drew:</h3>
-            <div id="drawn-team-display" class="text-3xl font-black text-emerald-400 tracking-wide uppercase"></div>
-            <p id="rule-notice" class="text-sm italic text-slate-400"></p>
+        <!-- Step 3: Result Modal/Text -->
+        <div id="result-section" class="hidden text-center space-y-4 pt-4 border-t border-slate-200 mt-4">
+            <h3 class="text-xl font-semibold text-slate-700">🎉 You Drew:</h3>
+            <div id="drawn-team-display" class="text-3xl font-black text-emerald-600 tracking-wide uppercase"></div>
+            <p id="rule-notice" class="text-sm italic text-amber-600 font-medium"></p>
         </div>
     </main>
 
-    <section class="w-full max-w-md mt-6 bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
-        <h3 class="text-xl font-bold text-amber-400 mb-4 border-b border-slate-700 pb-2">Live Board</h3>
-        <ul id="leaderboard" class="divide-y divide-slate-700 max-h-60 overflow-y-auto pr-2 space-y-2">
-            </ul>
+    <!-- Live Draft Board -->
+    <section class="w-full max-w-md mt-6 bg-white rounded-2xl p-6 shadow-xl border border-slate-200">
+        <h3 class="text-xl font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">Live Draft Board</h3>
+        <ul id="leaderboard" class="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-2 space-y-2">
+            <!-- Dynamically populated -->
+        </ul>
     </section>
 
+    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -79,7 +88,6 @@
         const db = getDatabase(app);
 
         // --- GAME CONFIGURATION ---
-        // Your exact 27 family members, automatically sorted alphabetically
         const familyMembers = [
             "Andrew", "Catherina", "Chris", "Declan", "Deedee", "Emily", 
             "Eoin the Elder", "Eoin the Younger", "Frederic", "Harry", "Issy", "Jackie", 
@@ -105,7 +113,6 @@
             "Croatia", "Ghana", "Panama"
         ];
         
-        // Top 6 favorites list (Triggering the single-team restriction rule)
         const top6Teams = ["Argentina", "France", "Brazil", "England", "Spain", "Germany"];
 
         // State Variables
@@ -171,8 +178,6 @@
         function updateUserFlowStatus() {
             if (!selectedUser) return;
             const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
-            
-            // Check if they already hit a top 6 team
             const hasTop6 = userDraw.teams.some(t => top6Teams.includes(t));
 
             if (userDraw.count >= 2 || (userDraw.count === 1 && hasTop6)) {
@@ -203,7 +208,7 @@
             const numSegments = availableTeams.length;
             if (numSegments === 0) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "white";
+                ctx.fillStyle = "#334155";
                 ctx.font = "bold 16px sans-serif";
                 ctx.fillText("No teams left!", 80, 140);
                 return;
@@ -214,11 +219,11 @@
 
             for (let i = 0; i < numSegments; i++) {
                 const angle = i * arcSize;
-                ctx.fillStyle = i % 2 === 0 ? '#1e293b' : '#334155'; // Alternating dark blues
                 
-                // Highlight top 6 teams on the wheel in gold tint
+                ctx.fillStyle = i % 2 === 0 ? '#3b82f6' : '#60a5fa'; 
+                
                 if (top6Teams.includes(availableTeams[i])) {
-                    ctx.fillStyle = i % 2 === 0 ? '#854d0e' : '#a16207'; 
+                    ctx.fillStyle = '#f59e0b'; 
                 }
 
                 ctx.beginPath();
@@ -226,7 +231,8 @@
                 ctx.arc(140, 140, 140, angle, angle + arcSize);
                 ctx.lineTo(140, 140);
                 ctx.fill();
-                ctx.strokeStyle = '#475569';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
 
                 // Add text labels
@@ -249,38 +255,30 @@
             spinBtn.disabled = true;
 
             const numSegments = availableTeams.length;
-            
-            // Pick a truly random winning index
             const winningIndex = Math.floor(Math.random() * numSegments);
             const winningTeam = availableTeams[winningIndex];
 
-            // Math to make the wheel spin cleanly and land accurately pointing at the top (12 o'clock)
             const degreesPerSegment = 360 / numSegments;
             const targetAngle = (winningIndex * degreesPerSegment) + (degreesPerSegment / 2);
-            const totalRotation = 3600 - targetAngle - 90; // 10 full spins + offset to align 12 o'clock pointer
+            const totalRotation = 3600 - targetAngle - 90; 
 
             canvas.style.transform = `rotate(${totalRotation}deg)`;
 
-            // Wait for transition animation to end (4 seconds)
             setTimeout(async () => {
                 isSpinning = false;
                 
-                // Reset wheel position invisibly for next time
                 canvas.style.transition = 'none';
                 const standardDegrees = (360 - targetAngle - 90) % 360;
                 canvas.style.transform = `rotate(${standardDegrees}deg)`;
-                // Force layout reflow
                 canvas.offsetHeight; 
                 canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
 
-                // Update Firebase Database safely
                 const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
                 userDraw.count += 1;
                 userDraw.teams.push(winningTeam);
 
                 await set(ref(db, `draws/${selectedUser}`), userDraw);
                 
-                // Alert User
                 resultSection.classList.remove('hidden');
                 drawnTeamDisplay.textContent = winningTeam;
                 
@@ -298,17 +296,16 @@
         function renderLeaderboard() {
             leaderboard.innerHTML = "";
             
-            // Loop through all family members to show status
             familyMembers.forEach(member => {
                 const data = currentDBState[member];
                 const li = document.createElement('li');
-                li.className = "py-2 flex justify-between items-center text-sm";
+                li.className = "py-2 flex justify-between items-center text-sm border-b border-slate-100 last:border-none";
                 
                 if (data && data.teams && data.teams.length > 0) {
                     const cleanTeams = data.teams.map(t => top6Teams.includes(t) ? `⭐ ${t}` : t).join(', ');
-                    li.innerHTML = `<span class="font-medium text-slate-300">${member}</span> <span class="text-emerald-400 font-bold text-right">${cleanTeams}</span>`;
+                    li.innerHTML = `<span class="font-semibold text-slate-700">${member}</span> <span class="text-emerald-600 font-bold text-right">${cleanTeams}</span>`;
                 } else {
-                    li.innerHTML = `<span class="font-medium text-slate-500">${member}</span> <span class="text-slate-600 italic">Hasn't spun yet</span>`;
+                    li.innerHTML = `<span class="font-normal text-slate-400">${member}</span> <span class="text-slate-400 italic text-xs">Hasn't spun yet</span>`;
                 }
                 leaderboard.appendChild(li);
             });
