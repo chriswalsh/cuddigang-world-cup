@@ -45,7 +45,7 @@
         <!-- Step 2: The Wheel (Hidden initially) -->
         <div id="wheel-section" class="hidden flex flex-col items-center space-y-6">
             <h2 id="welcome-user" class="text-xl font-bold text-center text-blue-600"></h2>
-            <p id="user-status" class="text-sm text-slate-500 text-center font-medium"></p>
+            <p id="user-status" class="text-sm text-slate-500 text-center font-medium px-2"></p>
             
             <!-- Wheel Container -->
             <div class="relative w-72 h-72 flex items-center justify-center">
@@ -68,13 +68,13 @@
         <div id="result-section" class="hidden text-center space-y-4 pt-4 border-t border-slate-200 mt-4 animate-pop">
             <h3 class="text-xl font-semibold text-slate-700">🎉 You Drew:</h3>
             <div id="drawn-team-display" class="text-3xl font-black text-emerald-600 tracking-wide uppercase"></div>
-            <p id="rule-notice" class="text-sm italic text-amber-600 font-medium"></p>
+            <p id="rule-notice" class="text-sm italic text-amber-600 font-medium px-2"></p>
         </div>
     </main>
 
-    <!-- Live Draft Board -->
+    <!-- Live Board -->
     <section class="w-full max-w-md mt-6 bg-white rounded-2xl p-6 shadow-xl border border-slate-200">
-        <h3 class="text-xl font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">Live Draft Board</h3>
+        <h3 class="text-xl font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">Live Board</h3>
         <ul id="leaderboard" class="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-2 space-y-2">
             <!-- Dynamically populated -->
         </ul>
@@ -83,7 +83,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ⚠️ REPLACE THIS WITH YOUR FIREBASE CONFIGURATION OBTAINED FROM THE CONSOLE
         const firebaseConfig = {
@@ -109,24 +109,27 @@
             "Patrick", "Sadie", "Yvonne"
         ].sort();
 
-        // Exact 48 Qualified Teams for the 2026 FIFA World Cup
-        const allTeams = [
-            "Argentina", "France", "Brazil", "England", "Spain", "Germany", // Top 6 Favorites
-            "Mexico", "South Africa", "South Korea", "Czechia", 
-            "Canada", "Bosnia", "Qatar", "Switzerland", 
-            "Morocco", "Haiti", "Scotland", 
-            "USA", "Paraguay", "Australia", "Türkiye", 
-            "Curaçao", "Ivory Coast", "Ecuador", 
-            "Netherlands", "Japan", "Sweden", "Tunisia", 
-            "Belgium", "Egypt", "Iran", "New Zealand", 
-            "Cabo Verde", "Saudi Arabia", "Uruguay", 
-            "Senegal", "Norway", "Iraq", 
-            "Algeria", "Austria", "Jordan", 
-            "Portugal", "DR Congo", "Uzbekistan", "Colombia", 
-            "Croatia", "Ghana", "Panama"
-        ];
-        
+        // Top 6 Powerhouses (Automatic 1-Team Cap)
         const top6Teams = ["Argentina", "France", "Brazil", "England", "Spain", "Germany"];
+
+        // Tier 1: Top 24 Teams total (The 6 Powerhouses + Next 18 Strongest)
+        const tier1Teams = [
+            ...top6Teams,
+            "Portugal", "Netherlands", "Belgium", "Italy", "Croatia", "Uruguay",
+            "Colombia", "Morocco", "USA", "Mexico", "Japan", "Senegal",
+            "Ecuador", "Switzerland", "Austria", "Ukraine", "Denmark", "South Korea"
+        ];
+
+        // Tier 2: Bottom 24 Teams (The Longshots)
+        const tier2Teams = [
+            "Australia", "Iran", "Tunisia", "Algeria", "Chile", "Poland",
+            "Saudi Arabia", "Canada", "Peru", "Mali", "Cameroon", "Costa Rica",
+            "Czechia", "Panama", "Jamaica", "South Africa", "Iraq", "Oman",
+            "Uzbekistan", "Haiti", "New Zealand", "Curaçao", "Cabo Verde", "Bosnia"
+        ];
+
+        // Complete pooled array
+        const allTeams = [...tier1Teams, ...tier2Teams];
 
         // State Variables
         let availableTeams = [...allTeams];
@@ -173,13 +176,35 @@
             }
         });
 
-        // Calculate available teams based on what's already taken
+        // Calculate available teams globally and filter based on user-specific tier locks
         function updateAvailableTeams() {
+            // 1. Gather all teams already claimed globally across the family
             const takenTeams = [];
             Object.values(currentDBState).forEach(userDraws => {
                 if (userDraws.teams) takenTeams.push(...userDraws.teams);
             });
-            availableTeams = allTeams.filter(team => !takenTeams.includes(team));
+
+            // 2. Base filter: baseline available pool
+            let pool = allTeams.filter(team => !takenTeams.includes(team));
+
+            // 3. Tier Balance Filter: If a specific user is active and on spin #2, restrict the pool
+            if (selectedUser) {
+                const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
+                
+                if (userDraw.count === 1 && userDraw.teams.length === 1) {
+                    const firstTeam = userDraw.teams[0];
+                    
+                    if (tier1Teams.includes(firstTeam) && !top6Teams.includes(firstTeam)) {
+                        // First draw was a strong team (7-24) -> Force them to pull from remaining Tier 2 teams
+                        pool = pool.filter(team => tier2Teams.includes(team));
+                    } else if (tier2Teams.includes(firstTeam)) {
+                        // First draw was a longshot -> Force them to pull from remaining Tier 1 teams
+                        pool = pool.filter(team => tier1Teams.includes(team));
+                    }
+                }
+            }
+
+            availableTeams = pool;
             drawWheel();
         }
 
@@ -188,23 +213,24 @@
             setupSection.classList.add('hidden');
             wheelSection.style.display = 'flex';
             welcomeUser.textContent = `Hey ${selectedUser}!`;
+            updateAvailableTeams(); // Run filter specific to this user's data state
             updateUserFlowStatus();
         });
 
         // Handle navigation back to main dropdown setup menu
         backBtn.addEventListener('click', () => {
-            if (isSpinning) return; // Prevent exiting while spinning
+            if (isSpinning) return; 
             
-            // Clear current user state selection
             selectedUser = "";
             familySelect.value = "";
             startBtn.disabled = true;
 
-            // Toggle visibility blocks back to home view
             wheelSection.style.display = 'none';
             wheelSection.classList.add('hidden');
             resultSection.classList.add('hidden');
             setupSection.classList.remove('hidden');
+            
+            updateAvailableTeams(); // Reset wheel to show everything globally
         });
 
         function updateUserFlowStatus() {
@@ -219,7 +245,15 @@
                 showFinalResults(userDraw.teams, hasTop6);
             } else {
                 const spinNum = userDraw.count + 1;
-                userStatus.textContent = `You currently have ${userDraw.count} team(s). Ready for Spin #${spinNum}!`;
+                
+                if (userDraw.count === 1) {
+                    const firstTeam = userDraw.teams[0];
+                    const tierLabel = tier1Teams.includes(firstTeam) ? "Tier 2 (Longshots)" : "Tier 1 (Favorites)";
+                    userStatus.textContent = `You drew ${firstTeam}. To keep it fair, Spin #2 is locked to: ${tierLabel}!`;
+                } else {
+                    userStatus.textContent = `You currently have 0 teams. Ready for Spin #1!`;
+                }
+                
                 spinBtn.disabled = isSpinning;
                 spinBtn.textContent = `SPIN FOR TEAM #${spinNum}`;
             }
@@ -229,9 +263,9 @@
             resultSection.classList.remove('hidden');
             drawnTeamDisplay.innerHTML = teams.join("<br><span class='text-xl text-slate-400'>&</span><br>");
             if (hasTop6) {
-                ruleNotice.textContent = "⚠️ You drew a Top 6 favorite! You get 1 team total.";
+                ruleNotice.textContent = "⚠️ You drew a Top 6 favorite! You get 1 powerhouse team total.";
             } else {
-                ruleNotice.textContent = "You have drawn your maximum of 2 teams.";
+                ruleNotice.textContent = "Nice mix! You have balanced teams from both tiers.";
             }
         }
 
@@ -242,7 +276,7 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = "#334155";
                 ctx.font = "bold 16px sans-serif";
-                ctx.fillText("No teams left!", 80, 140);
+                ctx.fillText("No matching teams left!", 50, 140);
                 return;
             }
 
@@ -251,11 +285,15 @@
 
             for (let i = 0; i < numSegments; i++) {
                 const angle = i * arcSize;
+                const currentTeam = availableTeams[i];
                 
-                ctx.fillStyle = i % 2 === 0 ? '#3b82f6' : '#60a5fa'; 
-                
-                if (top6Teams.includes(availableTeams[i])) {
-                    ctx.fillStyle = '#f59e0b'; 
+                // Color Code Slices
+                if (top6Teams.includes(currentTeam)) {
+                    ctx.fillStyle = '#f59e0b'; // Gold for Top 6 Powerhouses
+                } else if (tier1Teams.includes(currentTeam)) {
+                    ctx.fillStyle = '#3b82f6'; // Deep Blue for Tier 1
+                } else {
+                    ctx.fillStyle = '#10b981'; // Emerald Green for Tier 2 Longshots
                 }
 
                 ctx.beginPath();
@@ -273,8 +311,8 @@
                 ctx.translate(140, 140);
                 ctx.rotate(angle + arcSize / 2);
                 ctx.textAlign = "right";
-                ctx.font = numSegments > 20 ? "bold 9px sans-serif" : "bold 12px sans-serif";
-                ctx.fillText(availableTeams[i], 130, 4);
+                ctx.font = numSegments > 24 ? "bold 8px sans-serif" : (numSegments > 12 ? "bold 10px sans-serif" : "bold 12px sans-serif");
+                ctx.fillText(currentTeam, 130, 4);
                 ctx.restore();
             }
         }
@@ -285,7 +323,7 @@
             
             isSpinning = true;
             spinBtn.disabled = true;
-            backBtn.disabled = true; // Lock the back button during the draft
+            backBtn.disabled = true; 
             resultSection.classList.add('hidden'); 
 
             const numSegments = availableTeams.length;
@@ -305,16 +343,21 @@
                 drawnTeamDisplay.textContent = winningTeam;
                 
                 if (top6Teams.includes(winningTeam)) {
-                    ruleNotice.textContent = "💥 Wow! You drew a Top 6 powerhouse. That counts as your ONLY team!";
+                    ruleNotice.textContent = "💥 Powerhouse! You drew a Top 6 favorite, which counts as your ONLY team!";
                 } else {
                     const tempDrawCount = (currentDBState[selectedUser]?.count || 0) + 1;
-                    ruleNotice.textContent = tempDrawCount === 1 ? "You have 1 spin remaining." : "You've drawn your max teams!";
+                    if (tempDrawCount === 1) {
+                        const complementaryTier = tier1Teams.includes(winningTeam) ? "Tier 2 Longshot" : "Tier 1 Favorite";
+                        ruleNotice.textContent = `Nice drop! Your next spin will dynamically lock onto a ${complementaryTier}.`;
+                    } else {
+                        ruleNotice.textContent = "Perfect balance! You've drawn your max teams.";
+                    }
                 }
 
                 // 2. DELAY PHASE: Wait 3 additional seconds
                 setTimeout(async () => {
                     isSpinning = false;
-                    backBtn.disabled = false; // Re-enable navigation
+                    backBtn.disabled = false; 
                     
                     canvas.style.transition = 'none';
                     const standardDegrees = (360 - targetAngle - 90) % 360;
