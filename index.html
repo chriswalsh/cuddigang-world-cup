@@ -3,392 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family World Cup Live Sweepstakes</title>
+    <title>Family World Cup 2026 Sweepstakes</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        /* Simple Canvas Wheel Rotation */
+        #wheel {
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.2, 1);
         }
-        h1, h2 { color: #1a5235; }
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .setup-section, .wheel-section {
-            margin-bottom: 30px;
-        }
-        select, button {
-            padding: 12px 20px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 2px solid #1a5235;
-            margin: 10px;
-        }
-        button {
-            background-color: #1a5235;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            border-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #wheelContainer {
-            position: relative;
-            width: 350px;
-            height: 350px;
-            margin: 20px auto;
-        }
-        #canvas {
-            border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        #pointer {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 25px solid #e74c3c;
-            z-index: 10;
-        }
-        #resultLog {
-            font-size: 18px;
-            font-weight: bold;
-            color: #d35400;
-            margin: 15px 0;
-            min-height: 24px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        th { background-color: #1a5235; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-        }
-        .fav { background-color: #d4af37; color: black; }
-        .reg { background-color: #3498db; }
-        #statusMessage { font-weight: bold; color: #27ae60; margin-bottom: 10px;}
-        .hidden { display: none !important; }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center p-4">
 
-    <div id="loginContainer" class="container">
-        <h1>🏆 Family World Cup Live Entry 🏆</h1>
-        <p>Select your name to sign into the draft lobby:</p>
-        <select id="loginSelect">
-            <option value="">-- Choose Your Name --</option>
-        </select>
-        <button id="loginBtn" onclick="loginUser()">Enter Draft Room</button>
-    </div>
+    <header class="text-center my-6">
+        <h1 class="text-3xl font-extrabold text-amber-400">🏆 Family World Cup 2026 🏆</h1>
+        <p class="text-slate-400 text-sm mt-1">Sweepstakes Wheel of Destiny</p>
+    </header>
 
-    <div id="gameContainer" class="container hidden">
-        <div id="statusMessage"></div>
-        <button onclick="logoutUser()" style="background-color: #c0392b; border-color: #c0392b; padding: 6px 12px; font-size: 12px;">Switch User</button>
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-        
-        <button id="spinBtn" onclick="spinWheel()">SPIN THE WHEEL</button>
-
-        <div class="wheel-section">
-            <div id="wheelContainer">
-                <div id="pointer"></div>
-                <canvas id="canvas" width="350" height="350"></canvas>
-            </div>
-            <div id="resultLog"></div>
+    <main class="w-full max-w-md bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
+        <div id="setup-section" class="space-y-4">
+            <label for="family-select" class="block text-lg font-medium text-slate-200">Who is spinning?</label>
+            <select id="family-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <option value="">-- Select Your Name --</option>
+            </select>
+            <button id="start-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-lg transition disabled:opacity-50" disabled>
+                Proceed to Wheel
+            </button>
         </div>
-    </div>
 
-    <div class="container">
-        <h2>📊 Live Assigned Teams Leaderboard</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Family Member</th>
-                    <th>Team 1</th>
-                    <th>Team 2</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboardBody"></tbody>
-        </table>
-    </div>
+        <div id="wheel-section" class="hidden flex flex-col items-center space-y-6">
+            <h2 id="welcome-user" class="text-xl font-bold text-center text-amber-300"></h2>
+            <p id="user-status" class="text-sm text-slate-400 text-center"></p>
+            
+            <div class="relative w-72 h-72 flex items-center justify-center">
+                <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-amber-400 z-10"></div>
+                <canvas id="wheel" width="280" height="280" class="rounded-full shadow-2xl"></canvas>
+            </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+            <button id="spin-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-lg text-lg shadow-lg transform active:scale-95 transition disabled:opacity-50">
+                SPIN THE WHEEL!
+            </button>
+        </div>
 
-    // 🔴 REPLACE THIS CONFIG WITH YOUR FIREBASE PROJECT DETAILS 🔴
-    const firebaseConfig = {
-  apiKey: "AIzaSyA_sbYwjuOpceCPbbDu_ziBdjZsolf_jlQ",
-  authDomain: "cuddigang-family-sweepstakes.firebaseapp.com",
-  databaseURL: "https://cuddigang-family-sweepstakes-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "cuddigang-family-sweepstakes",
-  storageBucket: "cuddigang-family-sweepstakes.firebasestorage.app",
-  messagingSenderId: "875734381087",
-  appId: "1:875734381087:web:98c3f8eeeaaa941790db2a"
-    };
+        <div id="result-section" class="hidden text-center space-y-4 pt-4 border-t border-slate-700 mt-4">
+            <h3 class="text-xl font-semibold">🎉 You Drew:</h3>
+            <div id="drawn-team-display" class="text-3xl font-black text-emerald-400 tracking-wide uppercase"></div>
+            <p id="rule-notice" class="text-sm italic text-slate-400"></p>
+        </div>
+    </main>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    <section class="w-full max-w-md mt-6 bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
+        <h3 class="text-xl font-bold text-amber-400 mb-4 border-b border-slate-700 pb-2">Live Draft Board</h3>
+        <ul id="leaderboard" class="divide-y divide-slate-700 max-h-60 overflow-y-auto pr-2 space-y-2">
+            </ul>
+    </section>
 
-    // Initial constants
-    const favouritesList = ["Argentina", "Brazil", "France", "England", "Spain", "Germany"];
-    const regularsList = [
-        "USA", "Canada", "Mexico", "Japan", "New Zealand", "Iran", "Uzbekistan", "South Korea",
-        "Jordan", "Australia", "Ecuador", "Colombia", "Paraguay", "Uruguay", "Morocco", "Tunisia",
-        "Egypt", "Algeria", "Ghana", "Cape Verde", "South Africa", "Qatar", "Senegal", "Ivory Coast",
-        "Saudi Arabia", "Croatia", "Portugal", "Norway", "Netherlands", "Austria", "Belgium", "Scotland",
-        "Switzerland", "Curaçao", "Haiti", "Panama", "Sweden", "Türkiye", "Czechia", "Bosnia and Herzegovina",
-        "DR Congo", "Iraq"
-    ];
-    const familyMembers = [
-        "Jackie", "Eoin the Elder", "Michael", "James OC", "Lucy", "Deedee", 
-        "Frederic", "Orlaith", "Declan", "Michelle", "Neville", "Patrick", 
-        "Issy", "John", "Yvonne", "James Cud", "Andrew", "Emily", 
-        "Maurice", "Catherina", "Leo", "Maeve", "Eoin the Younger", "Margaret", 
-        "Chris", "Sadie", "Harry"
-    ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    let currentUsername = null;
-    let pool = [];
-    let state = {};
-    let isSpinning = false;
-    let currentRotation = 0;
+        // ⚠️ REPLACE THIS WITH YOUR FIREBASE CONFIGURATION OBTAINED FROM THE CONSOLE
+        const firebaseConfig = {
+              apiKey: "AIzaSyA_sbYwjuOpceCPbbDu_ziBdjZsolf_jlQ",
+              authDomain: "cuddigang-family-sweepstakes.firebaseapp.com",
+              databaseURL: "https://cuddigang-family-sweepstakes-default-rtdb.europe-west1.firebasedatabase.app",
+              projectId: "cuddigang-family-sweepstakes",
+              storageBucket: "cuddigang-family-sweepstakes.firebasestorage.app",
+              messagingSenderId: "875734381087",
+              appId: "1:875734381087:web:98c3f8eeeaaa941790db2a"
+        };
 
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-    // Initialize Database setup structure on Firebase if it doesn't exist
-    async function checkAndInitializeDB() {
-        const docRef = doc(db, "sweepstakes", "masterData");
-        const docSnap = await getDoc(docRef);
+        // --- GAME CONFIGURATION ---
+        // Your exact 27 family members, automatically sorted alphabetically
+        const familyMembers = [
+            "Andrew", "Catherina", "Chris", "Declan", "Deedee", "Emily", 
+            "Eoin the Elder", "Eoin the Younger", "Frederic", "Harry", "Issy", "Jackie", 
+            "James Cud", "James OC", "John", "Leo", "Lucy", "Maeve", 
+            "Margaret", "Maurice", "Michael", "Michelle", "Neville", "Orlaith", 
+            "Patrick", "Sadie", "Yvonne"
+        ].sort();
+
+        // Exact 48 Qualified Teams for the 2026 FIFA World Cup
+        const allTeams = [
+            "Argentina", "France", "Brazil", "England", "Spain", "Germany", // Top 6 Favorites
+            "Mexico", "South Africa", "South Korea", "Czechia", 
+            "Canada", "Bosnia", "Qatar", "Switzerland", 
+            "Morocco", "Haiti", "Scotland", 
+            "USA", "Paraguay", "Australia", "Türkiye", 
+            "Curaçao", "Ivory Coast", "Ecuador", 
+            "Netherlands", "Japan", "Sweden", "Tunisia", 
+            "Belgium", "Egypt", "Iran", "New Zealand", 
+            "Cabo Verde", "Saudi Arabia", "Uruguay", 
+            "Senegal", "Norway", "Iraq", 
+            "Algeria", "Austria", "Jordan", 
+            "Portugal", "DR Congo", "Uzbekistan", "Colombia", 
+            "Croatia", "Ghana", "Panama"
+        ];
         
-        if (!docSnap.exists()) {
-            let initialPool = [];
-            favouritesList.forEach(t => initialPool.push({ name: t, type: 'Favourite' }));
-            regularsList.forEach(t => initialPool.push({ name: t, type: 'Regular' }));
+        // Top 6 favorites list (Triggering the single-team restriction rule)
+        const top6Teams = ["Argentina", "France", "Brazil", "England", "Spain", "Germany"];
 
-            let initialState = {};
-            familyMembers.forEach(m => {
-                initialState[m] = { team1: null, team2: null, done: false };
-            });
+        // State Variables
+        let availableTeams = [...allTeams];
+        let currentDBState = {};
+        let selectedUser = "";
+        let isSpinning = false;
 
-            await setDoc(docRef, { pool: initialPool, state: initialState });
-        }
-    }
+        // DOM Elements
+        const familySelect = document.getElementById('family-select');
+        const startBtn = document.getElementById('start-btn');
+        const setupSection = document.getElementById('setup-section');
+        const wheelSection = document.getElementById('wheel-section');
+        const welcomeUser = document.getElementById('welcome-user');
+        const userStatus = document.getElementById('user-status');
+        const spinBtn = document.getElementById('spin-btn');
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const resultSection = document.getElementById('result-section');
+        const drawnTeamDisplay = document.getElementById('drawn-team-display');
+        const ruleNotice = document.getElementById('rule-notice');
+        const leaderboard = document.getElementById('leaderboard');
 
-    // Realtime Database Sync Listener
-    function listenToLiveUpdates() {
-        onSnapshot(doc(db, "sweepstakes", "masterData"), (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                pool = data.pool;
-                state = data.state;
-                updateUI();
-            }
-        });
-    }
-
-    function updateUI() {
-        // Dropdowns update
-        const loginSelect = document.getElementById("loginSelect");
-        const selectedVal = loginSelect.value;
-        loginSelect.innerHTML = '<option value="">-- Choose Your Name --</option>';
-        familyMembers.forEach(m => {
-            const opt = document.createElement("option");
-            opt.value = m;
-            opt.textContent = m;
-            loginSelect.appendChild(opt);
-        });
-        loginSelect.value = selectedVal;
-
-        // Leaderboard draw
-        const tbody = document.getElementById("leaderboardBody");
-        tbody.innerHTML = "";
+        // Populate Dropdown
         familyMembers.forEach(member => {
-            if(state[member]) {
-                const row = document.createElement("tr");
-                let t1Html = state[member].team1 ? `<span class="badge ${state[member].team1.type === 'Favourite'?'fav':'reg'}">${state[member].team1.name}</span>` : "—";
-                let t2Html = state[member].team2 ? `<span class="badge reg">${state[member].team2.name}</span>` : (state[member].done && state[member].team1.type === 'Favourite' ? "<em>None (Favourite Draw)</em>" : "—");
-                row.innerHTML = `<td><strong>${member}</strong></td><td>${t1Html}</td><td>${t2Html}</td>`;
-                tbody.appendChild(row);
-            }
+            const opt = document.createElement('option');
+            opt.value = member;
+            opt.textContent = member;
+            familySelect.appendChild(opt);
         });
 
-        // App Game Area updates
-        if (currentUsername && state[currentUsername]) {
-            document.getElementById("statusMessage").innerHTML = `Logged in as: <strong>${currentUsername}</strong>`;
-            const spinBtn = document.getElementById("spinBtn");
-            
-            if (state[currentUsername].done) {
-                spinBtn.disabled = true;
-                document.getElementById("resultLog").textContent = "You are all done! Check the leaderboard below for your final assignments.";
-            } else {
-                spinBtn.disabled = isSpinning;
-                if (!state[currentUsername].team1) {
-                    document.getElementById("resultLog").textContent = "Ready for your 1st Spin!";
-                } else {
-                    document.getElementById("resultLog").textContent = `You drew ${state[currentUsername].team1.name}. Click above to draw your 2nd team!`;
-                }
-            }
-        }
-        drawWheel();
-    }
-
-    function drawWheel() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (pool.length === 0) {
-            ctx.fillStyle = "#333";
-            ctx.font = "18px Arial";
-            ctx.fillText("All Teams Assigned!", 95, 180);
-            return;
-        }
-
-        const arc = (2 * Math.PI) / pool.length;
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const radius = centerX;
-
-        for (let i = 0; i < pool.length; i++) {
-            const angle = currentRotation + (i * arc);
-            ctx.fillStyle = pool[i].type === 'Favourite' ? '#d4af37' : (i % 2 === 0 ? '#27ae60' : '#2ecc71');
-            
-            ctx.beginPath();
-            ctx.moveTo(centerX, centerY);
-            ctx.arc(centerX, centerY, radius, angle, angle + arc);
-            ctx.lineTo(centerX, centerY);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.save();
-            ctx.fillStyle = pool[i].type === 'Favourite' ? 'black' : 'white';
-            ctx.font = pool.length > 20 ? "9px Arial" : "12px Arial";
-            ctx.translate(centerX, centerY);
-            ctx.rotate(angle + arc / 2);
-            ctx.fillText(pool[i].name.substring(0, 11), radius / 2.6, 4);
-            ctx.restore();
-        }
-    }
-
-    window.loginUser = function() {
-        const name = document.getElementById("loginSelect").value;
-        if (!name) { alert("Please choose your name!"); return; }
-        
-        signInAnonymously(auth).then(() => {
-            currentUsername = name;
-            document.getElementById("loginContainer").classList.add("hidden");
-            document.getElementById("gameContainer").classList.remove("hidden");
-            updateUI();
-        }).catch(err => alert("Error logging in: " + err.message));
-    }
-
-    window.logoutUser = function() {
-        signOut(auth).then(() => {
-            currentUsername = null;
-            document.getElementById("gameContainer").classList.add("hidden");
-            document.getElementById("loginContainer").classList.remove("hidden");
+        familySelect.addEventListener('change', (e) => {
+            selectedUser = e.target.value;
+            startBtn.disabled = !selectedUser;
         });
-    }
 
-    window.spinWheel = function() {
-        if (!currentUsername || isSpinning || pool.length === 0 || state[currentUsername].done) return;
+        // Initialize/Sync Database in Real-time
+        onValue(ref(db, 'draws'), (snapshot) => {
+            currentDBState = snapshot.val() || {};
+            updateAvailableTeams();
+            renderLeaderboard();
+            updateUserFlowStatus();
+        });
 
-        isSpinning = true;
-        document.getElementById("spinBtn").disabled = true;
-        document.getElementById("resultLog").textContent = "Spinning...";
-
-        const spinDuration = 3500; 
-        const startTimestamp = performance.now();
-        const extraSpins = 6 * 2 * Math.PI; 
-        const initialRotation = currentRotation;
-
-        function animate(timestamp) {
-            const elapsed = timestamp - startTimestamp;
-            const progress = Math.min(elapsed / spinDuration, 1);
-            const easeOut = 1 - Math.pow(1 - progress, 4);
-            
-            currentRotation = initialRotation + (easeOut * extraSpins);
+        // Calculate available teams based on what's already taken
+        function updateAvailableTeams() {
+            const takenTeams = [];
+            Object.values(currentDBState).forEach(userDraws => {
+                if (userDraws.teams) takenTeams.push(...userDraws.teams);
+            });
+            availableTeams = allTeams.filter(team => !takenTeams.includes(team));
             drawWheel();
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                finalizeSpin();
-            }
-        }
-        requestAnimationFrame(animate);
-    }
-
-    async function finalizeSpin() {
-        const arc = (2 * Math.PI) / pool.length;
-        const normalizedRotation = (3 * Math.PI / 2 - currentRotation) % (2 * Math.PI);
-        let winningIndex = Math.floor((normalizedRotation < 0 ? normalizedRotation + 2*Math.PI : normalizedRotation) / arc);
-        winningIndex = (winningIndex >= pool.length) ? pool.length - 1 : winningIndex;
-        
-        // Extract selected team
-        const prize = pool.splice(winningIndex, 1)[0]; 
-        
-        // Game Engine Logic mapping
-        if (!state[currentUsername].team1) {
-            state[currentUsername].team1 = prize;
-            if (prize.type === "Favourite") {
-                state[currentUsername].done = true;
-            }
-        } else {
-            state[currentUsername].team2 = prize;
-            state[currentUsername].done = true;
         }
 
-        // Push updates up to Cloud Firestore
-        const docRef = doc(db, "sweepstakes", "masterData");
-        await updateDoc(docRef, {
-            pool: pool,
-            state: state
+        // Handle User moving to the wheel screen
+        startBtn.addEventListener('click', () => {
+            setupSection.classList.add('hidden');
+            wheelSection.style.display = 'flex';
+            welcomeUser.textContent = `Hey ${selectedUser}!`;
+            updateUserFlowStatus();
         });
 
-        isSpinning = false;
-        updateUI();
-    }
+        function updateUserFlowStatus() {
+            if (!selectedUser) return;
+            const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
+            
+            // Check if they already hit a top 6 team
+            const hasTop6 = userDraw.teams.some(t => top6Teams.includes(t));
 
-    // Run Engine
-    async function startApp() {
-        await checkAndInitializeDB();
-        listenToLiveUpdates();
-    }
-    startApp();
-</script>
+            if (userDraw.count >= 2 || (userDraw.count === 1 && hasTop6)) {
+                userStatus.textContent = "You are all done! You have your maximum teams.";
+                spinBtn.disabled = true;
+                spinBtn.textContent = "No Spins Left";
+                showFinalResults(userDraw.teams, hasTop6);
+            } else {
+                const spinNum = userDraw.count + 1;
+                userStatus.textContent = `You currently have ${userDraw.count} team(s). Ready for Spin #${spinNum}!`;
+                spinBtn.disabled = isSpinning;
+                spinBtn.textContent = `SPIN FOR TEAM #${spinNum}`;
+            }
+        }
+
+        function showFinalResults(teams, hasTop6) {
+            resultSection.classList.remove('hidden');
+            drawnTeamDisplay.innerHTML = teams.join("<br><span class='text-xl text-slate-400'>&</span><br>");
+            if (hasTop6) {
+                ruleNotice.textContent = "⚠️ You drew a Top 6 favorite! You get 1 team total.";
+            } else {
+                ruleNotice.textContent = "You have drawn your maximum of 2 teams.";
+            }
+        }
+
+        // --- DRAW CANVAS WHEEL ---
+        function drawWheel() {
+            const numSegments = availableTeams.length;
+            if (numSegments === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 16px sans-serif";
+                ctx.fillText("No teams left!", 80, 140);
+                return;
+            }
+
+            const arcSize = (2 * Math.PI) / numSegments;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSegments; i++) {
+                const angle = i * arcSize;
+                ctx.fillStyle = i % 2 === 0 ? '#1e293b' : '#334155'; // Alternating dark blues
+                
+                // Highlight top 6 teams on the wheel in gold tint
+                if (top6Teams.includes(availableTeams[i])) {
+                    ctx.fillStyle = i % 2 === 0 ? '#854d0e' : '#a16207'; 
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(140, 140);
+                ctx.arc(140, 140, 140, angle, angle + arcSize);
+                ctx.lineTo(140, 140);
+                ctx.fill();
+                ctx.strokeStyle = '#475569';
+                ctx.stroke();
+
+                // Add text labels
+                ctx.save();
+                ctx.fillStyle = "white";
+                ctx.translate(140, 140);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.font = numSegments > 20 ? "bold 9px sans-serif" : "bold 12px sans-serif";
+                ctx.fillText(availableTeams[i], 130, 4);
+                ctx.restore();
+            }
+        }
+
+        // --- SPIN LOGIC ---
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning || availableTeams.length === 0) return;
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            const numSegments = availableTeams.length;
+            
+            // Pick a truly random winning index
+            const winningIndex = Math.floor(Math.random() * numSegments);
+            const winningTeam = availableTeams[winningIndex];
+
+            // Math to make the wheel spin cleanly and land accurately pointing at the top (12 o'clock)
+            const degreesPerSegment = 360 / numSegments;
+            const targetAngle = (winningIndex * degreesPerSegment) + (degreesPerSegment / 2);
+            const totalRotation = 3600 - targetAngle - 90; // 10 full spins + offset to align 12 o'clock pointer
+
+            canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+            // Wait for transition animation to end (4 seconds)
+            setTimeout(async () => {
+                isSpinning = false;
+                
+                // Reset wheel position invisibly for next time
+                canvas.style.transition = 'none';
+                const standardDegrees = (360 - targetAngle - 90) % 360;
+                canvas.style.transform = `rotate(${standardDegrees}deg)`;
+                // Force layout reflow
+                canvas.offsetHeight; 
+                canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
+
+                // Update Firebase Database safely
+                const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
+                userDraw.count += 1;
+                userDraw.teams.push(winningTeam);
+
+                await set(ref(db, `draws/${selectedUser}`), userDraw);
+                
+                // Alert User
+                resultSection.classList.remove('hidden');
+                drawnTeamDisplay.textContent = winningTeam;
+                
+                if (top6Teams.includes(winningTeam)) {
+                    ruleNotice.textContent = "💥 Wow! You drew a Top 6 powerhouse. That counts as your ONLY team!";
+                } else {
+                    ruleNotice.textContent = userDraw.count === 1 ? "You have 1 spin remaining." : "You've drawn your max teams!";
+                }
+
+                updateUserFlowStatus();
+            }, 4000);
+        });
+
+        // --- RENDER LIVE LEADERBOARD ---
+        function renderLeaderboard() {
+            leaderboard.innerHTML = "";
+            
+            // Loop through all family members to show status
+            familyMembers.forEach(member => {
+                const data = currentDBState[member];
+                const li = document.createElement('li');
+                li.className = "py-2 flex justify-between items-center text-sm";
+                
+                if (data && data.teams && data.teams.length > 0) {
+                    const cleanTeams = data.teams.map(t => top6Teams.includes(t) ? `⭐ ${t}` : t).join(', ');
+                    li.innerHTML = `<span class="font-medium text-slate-300">${member}</span> <span class="text-emerald-400 font-bold text-right">${cleanTeams}</span>`;
+                } else {
+                    li.innerHTML = `<span class="font-medium text-slate-500">${member}</span> <span class="text-slate-600 italic">Hasn't spun yet</span>`;
+                }
+                leaderboard.appendChild(li);
+            });
+        }
+    </script>
 </body>
 </html>
