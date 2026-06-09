@@ -191,15 +191,18 @@
             if (selectedUser) {
                 const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
                 
+                // Only restrict tiers if they have 1 team and it ISN'T a powerhouse
                 if (userDraw.count === 1 && userDraw.teams.length === 1) {
                     const firstTeam = userDraw.teams[0];
                     
-                    if (tier1Teams.includes(firstTeam) && !top6Teams.includes(firstTeam)) {
-                        // First draw was a strong team (7-24) -> Force them to pull from remaining Tier 2 teams
-                        pool = pool.filter(team => tier2Teams.includes(team));
-                    } else if (tier2Teams.includes(firstTeam)) {
-                        // First draw was a longshot -> Force them to pull from remaining Tier 1 teams
-                        pool = pool.filter(team => tier1Teams.includes(team));
+                    if (!top6Teams.includes(firstTeam)) {
+                        if (tier1Teams.includes(firstTeam)) {
+                            // First draw was a strong team (7-24) -> Force them to pull from remaining Tier 2 teams + include Top 6 Powerhouses
+                            pool = pool.filter(team => tier2Teams.includes(team) || top6Teams.includes(team));
+                        } else if (tier2Teams.includes(firstTeam)) {
+                            // First draw was a longshot -> Force them to pull from remaining Tier 1 teams (which naturally includes Top 6)
+                            pool = pool.filter(team => tier1Teams.includes(team));
+                        }
                     }
                 }
             }
@@ -238,7 +241,8 @@
             const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
             const hasTop6 = userDraw.teams.some(t => top6Teams.includes(t));
 
-            if (userDraw.count >= 2 || (userDraw.count === 1 && hasTop6)) {
+            // Done if they have 2 teams, or if they have 1 team that happens to be a powerhouse
+            if (userDraw.teams.length >= 2 || (userDraw.teams.length === 1 && hasTop6)) {
                 userStatus.textContent = "You are all done! You have your maximum teams.";
                 spinBtn.disabled = true;
                 spinBtn.textContent = "No Spins Left";
@@ -246,10 +250,10 @@
             } else {
                 const spinNum = userDraw.count + 1;
                 
-                if (userDraw.count === 1) {
+                if (userDraw.teams.length === 1) {
                     const firstTeam = userDraw.teams[0];
-                    const tierLabel = tier1Teams.includes(firstTeam) ? "Tier 2 (Longshots)" : "Tier 1 (Favorites)";
-                    userStatus.textContent = `You drew ${firstTeam}. To keep it fair, Spin #2 is locked to: ${tierLabel}!`;
+                    const tierLabel = tier1Teams.includes(firstTeam) ? "Tier 2 (Longshots) + Powerhouses" : "Tier 1 (Favorites)";
+                    userStatus.textContent = `You drew ${firstTeam}. Spin #2 includes remaining ${tierLabel}!`;
                 } else {
                     userStatus.textContent = `You currently have 0 teams. Ready for Spin #1!`;
                 }
@@ -263,7 +267,7 @@
             resultSection.classList.remove('hidden');
             drawnTeamDisplay.innerHTML = teams.join("<br><span class='text-xl text-slate-400'>&</span><br>");
             if (hasTop6) {
-                ruleNotice.textContent = "⚠️ You drew a Top 6 favorite! You get 1 powerhouse team total.";
+                ruleNotice.textContent = "⚠️ You landed a Top 6 favorite! Your other team has been returned to the wheel. You get 1 powerhouse team total.";
             } else {
                 ruleNotice.textContent = "Nice mix! You have balanced teams from both tiers.";
             }
@@ -340,15 +344,21 @@
             setTimeout(() => {
                 
                 resultSection.classList.remove('hidden');
-                drawnTeamDisplay.textContent = winningTeam;
                 
-                if (top6Teams.includes(winningTeam)) {
-                    ruleNotice.textContent = "💥 Powerhouse! You drew a Top 6 favorite, which counts as your ONLY team!";
+                const isPowerhouse = top6Teams.includes(winningTeam);
+                const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
+                const isSecondSpinPowerhouse = (userDraw.teams.length === 1 && isPowerhouse);
+
+                if (isSecondSpinPowerhouse) {
+                    drawnTeamDisplay.innerHTML = `<span class='text-xs line-through text-slate-400 block'>${userDraw.teams[0]}</span>` + winningTeam;
+                    ruleNotice.textContent = "💥 POWERHOUSE UPGRADE! You landed a Top 6 favorite on Spin #2! Your first team is going back on the wheel.";
                 } else {
-                    const tempDrawCount = (currentDBState[selectedUser]?.count || 0) + 1;
-                    if (tempDrawCount === 1) {
+                    drawnTeamDisplay.textContent = winningTeam;
+                    if (isPowerhouse) {
+                        ruleNotice.textContent = "💥 Powerhouse! You drew a Top 6 favorite, which counts as your ONLY team!";
+                    } else if (userDraw.teams.length === 0) {
                         const complementaryTier = tier1Teams.includes(winningTeam) ? "Tier 2 Longshot" : "Tier 1 Favorite";
-                        ruleNotice.textContent = `Nice drop! Your next spin will dynamically lock onto a ${complementaryTier}.`;
+                        ruleNotice.textContent = `Nice drop! Your next spin will dynamically filter to balance your options.`;
                     } else {
                         ruleNotice.textContent = "Perfect balance! You've drawn your max teams.";
                     }
@@ -365,9 +375,16 @@
                     canvas.offsetHeight; 
                     canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
 
-                    const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
+                    // -- CRITICAL MUTATION LOGIC --
                     userDraw.count += 1;
-                    userDraw.teams.push(winningTeam);
+                    
+                    if (isSecondSpinPowerhouse) {
+                        // Forfeit the first team back to the pool, keep only the Powerhouse
+                        userDraw.teams = [winningTeam];
+                    } else {
+                        // Standard process: just add it
+                        userDraw.teams.push(winningTeam);
+                    }
 
                     await set(ref(db, `draws/${selectedUser}`), userDraw);
                     
