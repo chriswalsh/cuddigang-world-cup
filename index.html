@@ -246,7 +246,7 @@
                 userStatus.textContent = "You are all done! You have your maximum teams.";
                 spinBtn.disabled = true;
                 spinBtn.textContent = "No Spins Left";
-                showFinalResults(userDraw.teams, hasTop6);
+                showFinalResults(userDraw.teams, hasTop6, userDraw.count);
             } else {
                 const spinNum = userDraw.count + 1;
                 
@@ -263,11 +263,18 @@
             }
         }
 
-        function showFinalResults(teams, hasTop6) {
+        function showFinalResults(teams, hasTop6, spinCount) {
             resultSection.classList.remove('hidden');
             drawnTeamDisplay.innerHTML = teams.join("<br><span class='text-xl text-slate-400'>&</span><br>");
+            
             if (hasTop6) {
-                ruleNotice.textContent = "⚠️ You landed a Top 6 favorite! Your other team has been returned to the wheel. You get 1 powerhouse team total.";
+                if (spinCount === 1) {
+                    // Landed a favorite immediately on spin #1
+                    ruleNotice.textContent = "⚠️ Incredible first spin! You hit a Top 6 favorite, giving you 1 powerhouse team total.";
+                } else {
+                    // Upgraded on spin #2
+                    ruleNotice.textContent = "⚠️ You landed a Top 6 favorite! Your other team has been returned to the wheel. You get 1 powerhouse team total.";
+                }
             } else {
                 ruleNotice.textContent = "Nice mix! You have balanced teams from both tiers.";
             }
