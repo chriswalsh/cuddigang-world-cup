@@ -109,23 +109,76 @@
             "Patrick", "Sadie", "Yvonne"
         ].sort();
 
+        const qualifiedTeamsByOdds = [
+              "Spain",                 // Co-Favorite (+450)
+              "France",                // Co-Favorite (+470)
+              "England",               // Third Favorite (+650)
+              "Brazil",                // (+850)
+              "Portugal",              // (+900)
+              "Argentina",             // Defending Champions (+950)
+              "Germany",               // (+1400)
+              "Netherlands",           // (+1700)
+              "Belgium",               // (+2200)
+              "Norway",                // (+3300)
+              "Japan",                 // Top AFC Choice (+3500)
+              "Colombia",              // (+4000)
+              "United States",         // Co-Host (+5000)
+              "Morocco",               // Top CAF Choice (+5500)
+              "Mexico",                // Co-Host (+5500)
+              "Uruguay",               // (+5500)
+              "Switzerland",           // (+7500)
+              "Türkiye",               // (+8000)
+              "Croatia",               // (+8000)
+              "Ecuador",               // (+8000)
+              "Austria",               // (+10000)
+              "Senegal",               // (+15000)
+              "Canada",                // Co-Host (+17500)
+              "Sweden",                // (+17500)
+              "Scotland",              // (+17500)
+              "Côte d'Ivoire",         // (+20000)
+              "Paraguay",              // (+20000)
+              "Algeria",               // (+25000)
+              "Egypt",                 // (+40000)
+              "Ghana",                 // (+40000)
+              "Korea Republic",        // (+40000)
+              "Czechia",               // (+50000)
+              "IR Iran",               // (+50000)
+              "Bosnia and Herzegovina",// (+50000)
+              "Tunisia",               // (+150000)
+              
+              // Massive Underdog Tier (Consensus +250000 Longshots)
+              "Australia",
+              "Cape Verde",
+              "Congo DR",
+              "Curaçao",
+              "Haiti",
+              "Iraq",
+              "Jordan",
+              "New Zealand",
+              "Panama",
+              "Qatar",
+              "Saudi Arabia",
+              "South Africa",
+              "Uzbekistan"
+            ];
+        
         // Top 6 Powerhouses (Automatic 1-Team Cap)
-        const top6Teams = ["Argentina", "France", "Brazil", "England", "Spain", "Germany"];
+        const top6Teams = ["Argentina", "France", "Brazil", "England", "Spain", "Portugal"];
 
         // Tier 1: Top 24 Teams total (The 6 Powerhouses + Next 18 Strongest)
         const tier1Teams = [
             ...top6Teams,
-            "Portugal", "Netherlands", "Belgium", "Italy", "Croatia", "Uruguay",
-            "Colombia", "Morocco", "USA", "Mexico", "Japan", "Senegal",
-            "Ecuador", "Switzerland", "Austria", "Ukraine", "Denmark", "South Korea"
+            "Germany", "Netherlands", "Belgium", "Norway", "Japan", "Colombia",
+            "United States", "Morocco", "Mexico", "Uruguay", "Switzerland", "Türkiye",
+            "Croatia", "Ecuador", "Austria", "Senegal", "Canada", "Sweden"
         ];
 
         // Tier 2: Bottom 24 Teams (The Longshots)
         const tier2Teams = [
-            "Australia", "Iran", "Tunisia", "Algeria", "Chile", "Poland",
-            "Saudi Arabia", "Canada", "Peru", "Mali", "Cameroon", "Costa Rica",
-            "Czechia", "Panama", "Jamaica", "South Africa", "Iraq", "Oman",
-            "Uzbekistan", "Haiti", "New Zealand", "Curaçao", "Cabo Verde", "Bosnia"
+            "Scotland", "Côte d'Ivoire", "Paraguay", "Algeria", "Egypt", "Ghana", 
+            "Korea Republic", "Czechia", "IR Iran", "Bosnia and Herzegovina", "Tunisia", "Australia",
+            "Cape Verde", "Congo DR", "Curaçao", "Haiti", "Iraq", "Jordan",
+            "New Zealand", "Panama", "Qatar", "Saudi Arabia", "South Africa", "Uzbekistan"
         ];
 
         // Complete pooled array
