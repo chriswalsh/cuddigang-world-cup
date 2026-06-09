@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family World Cup Live Sweepstakes</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1, h2 { color: #1a5235; }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .setup-section, .wheel-section {
+            margin-bottom: 30px;
+        }
+        select, button {
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #1a5235;
+            margin: 10px;
+        }
+        button {
+            background-color: #1a5235;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            border-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #wheelContainer {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            margin: 20px auto;
+        }
+        #canvas {
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        #pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #e74c3c;
+            z-index: 10;
+        }
+        #resultLog {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d35400;
+            margin: 15px 0;
+            min-height: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th { background-color: #1a5235; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .fav { background-color: #d4af37; color: black; }
+        .reg { background-color: #3498db; }
+        #statusMessage { font-weight: bold; color: #27ae60; margin-bottom: 10px;}
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="loginContainer" class="container">
+        <h1>🏆 Family World Cup Live Entry 🏆</h1>
+        <p>Select your name to sign into the draft lobby:</p>
+        <select id="loginSelect">
+            <option value="">-- Choose Your Name --</option>
+        </select>
+        <button id="loginBtn" onclick="loginUser()">Enter Draft Room</button>
+    </div>
+
+    <div id="gameContainer" class="container hidden">
+        <div id="statusMessage"></div>
+        <button onclick="logoutUser()" style="background-color: #c0392b; border-color: #c0392b; padding: 6px 12px; font-size: 12px;">Switch User</button>
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        
+        <button id="spinBtn" onclick="spinWheel()">SPIN THE WHEEL</button>
+
+        <div class="wheel-section">
+            <div id="wheelContainer">
+                <div id="pointer"></div>
+                <canvas id="canvas" width="350" height="350"></canvas>
+            </div>
+            <div id="resultLog"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Live Assigned Teams Leaderboard</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Family Member</th>
+                    <th>Team 1</th>
+                    <th>Team 2</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+        </table>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 🔴 REPLACE THIS CONFIG WITH YOUR FIREBASE PROJECT DETAILS 🔴
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Initial constants
+    const favouritesList = ["Argentina", "Brazil", "France", "England", "Spain", "Germany"];
+    const regularsList = [
+        "USA", "Canada", "Mexico", "Japan", "New Zealand", "Iran", "Uzbekistan", "South Korea",
+        "Jordan", "Australia", "Ecuador", "Colombia", "Paraguay", "Uruguay", "Morocco", "Tunisia",
+        "Egypt", "Algeria", "Ghana", "Cape Verde", "South Africa", "Qatar", "Senegal", "Ivory Coast",
+        "Saudi Arabia", "Croatia", "Portugal", "Norway", "Netherlands", "Austria", "Belgium", "Scotland",
+        "Switzerland", "Curaçao", "Haiti", "Panama", "Sweden", "Türkiye", "Czechia", "Bosnia and Herzegovina",
+        "DR Congo", "Iraq"
+    ];
+    const familyMembers = [
+        "Jackie", "Eoin the Elder", "Michael", "James OC", "Lucy", "Deedee", 
+        "Frederic", "Orlaith", "Declan", "Michelle", "Neville", "Patrick", 
+        "Issy", "John", "Yvonne", "James Cud", "Andrew", "Emily", 
+        "Maurice", "Catherina", "Leo", "Maeve", "Eoin the Younger", "Margaret", 
+        "Chris", "Sadie", "Harry"
+    ];
+
+    let currentUsername = null;
+    let pool = [];
+    let state = {};
+    let isSpinning = false;
+    let currentRotation = 0;
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Initialize Database setup structure on Firebase if it doesn't exist
+    async function checkAndInitializeDB() {
+        const docRef = doc(db, "sweepstakes", "masterData");
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            let initialPool = [];
+            favouritesList.forEach(t => initialPool.push({ name: t, type: 'Favourite' }));
+            regularsList.forEach(t => initialPool.push({ name: t, type: 'Regular' }));
+
+            let initialState = {};
+            familyMembers.forEach(m => {
+                initialState[m] = { team1: null, team2: null, done: false };
+            });
+
+            await setDoc(docRef, { pool: initialPool, state: initialState });
+        }
+    }
+
+    // Realtime Database Sync Listener
+    function listenToLiveUpdates() {
+        onSnapshot(doc(db, "sweepstakes", "masterData"), (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                pool = data.pool;
+                state = data.state;
+                updateUI();
+            }
+        });
+    }
+
+    function updateUI() {
+        // Dropdowns update
+        const loginSelect = document.getElementById("loginSelect");
+        const selectedVal = loginSelect.value;
+        loginSelect.innerHTML = '<option value="">-- Choose Your Name --</option>';
+        familyMembers.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m;
+            opt.textContent = m;
+            loginSelect.appendChild(opt);
+        });
+        loginSelect.value = selectedVal;
+
+        // Leaderboard draw
+        const tbody = document.getElementById("leaderboardBody");
+        tbody.innerHTML = "";
+        familyMembers.forEach(member => {
+            if(state[member]) {
+                const row = document.createElement("tr");
+                let t1Html = state[member].team1 ? `<span class="badge ${state[member].team1.type === 'Favourite'?'fav':'reg'}">${state[member].team1.name}</span>` : "—";
+                let t2Html = state[member].team2 ? `<span class="badge reg">${state[member].team2.name}</span>` : (state[member].done && state[member].team1.type === 'Favourite' ? "<em>None (Favourite Draw)</em>" : "—");
+                row.innerHTML = `<td><strong>${member}</strong></td><td>${t1Html}</td><td>${t2Html}</td>`;
+                tbody.appendChild(row);
+            }
+        });
+
+        // App Game Area updates
+        if (currentUsername && state[currentUsername]) {
+            document.getElementById("statusMessage").innerHTML = `Logged in as: <strong>${currentUsername}</strong>`;
+            const spinBtn = document.getElementById("spinBtn");
+            
+            if (state[currentUsername].done) {
+                spinBtn.disabled = true;
+                document.getElementById("resultLog").textContent = "You are all done! Check the leaderboard below for your final assignments.";
+            } else {
+                spinBtn.disabled = isSpinning;
+                if (!state[currentUsername].team1) {
+                    document.getElementById("resultLog").textContent = "Ready for your 1st Spin!";
+                } else {
+                    document.getElementById("resultLog").textContent = `You drew ${state[currentUsername].team1.name}. Click above to draw your 2nd team!`;
+                }
+            }
+        }
+        drawWheel();
+    }
+
+    function drawWheel() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (pool.length === 0) {
+            ctx.fillStyle = "#333";
+            ctx.font = "18px Arial";
+            ctx.fillText("All Teams Assigned!", 95, 180);
+            return;
+        }
+
+        const arc = (2 * Math.PI) / pool.length;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = centerX;
+
+        for (let i = 0; i < pool.length; i++) {
+            const angle = currentRotation + (i * arc);
+            ctx.fillStyle = pool[i].type === 'Favourite' ? '#d4af37' : (i % 2 === 0 ? '#27ae60' : '#2ecc71');
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, angle, angle + arc);
+            ctx.lineTo(centerX, centerY);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.save();
+            ctx.fillStyle = pool[i].type === 'Favourite' ? 'black' : 'white';
+            ctx.font = pool.length > 20 ? "9px Arial" : "12px Arial";
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle + arc / 2);
+            ctx.fillText(pool[i].name.substring(0, 11), radius / 2.6, 4);
+            ctx.restore();
+        }
+    }
+
+    window.loginUser = function() {
+        const name = document.getElementById("loginSelect").value;
+        if (!name) { alert("Please choose your name!"); return; }
+        
+        signInAnonymously(auth).then(() => {
+            currentUsername = name;
+            document.getElementById("loginContainer").classList.add("hidden");
+            document.getElementById("gameContainer").classList.remove("hidden");
+            updateUI();
+        }).catch(err => alert("Error logging in: " + err.message));
+    }
+
+    window.logoutUser = function() {
+        signOut(auth).then(() => {
+            currentUsername = null;
+            document.getElementById("gameContainer").classList.add("hidden");
+            document.getElementById("loginContainer").classList.remove("hidden");
+        });
+    }
+
+    window.spinWheel = function() {
+        if (!currentUsername || isSpinning || pool.length === 0 || state[currentUsername].done) return;
+
+        isSpinning = true;
+        document.getElementById("spinBtn").disabled = true;
+        document.getElementById("resultLog").textContent = "Spinning...";
+
+        const spinDuration = 3500; 
+        const startTimestamp = performance.now();
+        const extraSpins = 6 * 2 * Math.PI; 
+        const initialRotation = currentRotation;
+
+        function animate(timestamp) {
+            const elapsed = timestamp - startTimestamp;
+            const progress = Math.min(elapsed / spinDuration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 4);
+            
+            currentRotation = initialRotation + (easeOut * extraSpins);
+            drawWheel();
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                finalizeSpin();
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+
+    async function finalizeSpin() {
+        const arc = (2 * Math.PI) / pool.length;
+        const normalizedRotation = (3 * Math.PI / 2 - currentRotation) % (2 * Math.PI);
+        let winningIndex = Math.floor((normalizedRotation < 0 ? normalizedRotation + 2*Math.PI : normalizedRotation) / arc);
+        winningIndex = (winningIndex >= pool.length) ? pool.length - 1 : winningIndex;
+        
+        // Extract selected team
+        const prize = pool.splice(winningIndex, 1)[0]; 
+        
+        // Game Engine Logic mapping
+        if (!state[currentUsername].team1) {
+            state[currentUsername].team1 = prize;
+            if (prize.type === "Favourite") {
+                state[currentUsername].done = true;
+            }
+        } else {
+            state[currentUsername].team2 = prize;
+            state[currentUsername].done = true;
+        }
+
+        // Push updates up to Cloud Firestore
+        const docRef = doc(db, "sweepstakes", "masterData");
+        await updateDoc(docRef, {
+            pool: pool,
+            state: state
+        });
+
+        isSpinning = false;
+        updateUI();
+    }
+
+    // Run Engine
+    async function startApp() {
+        await checkAndInitializeDB();
+        listenToLiveUpdates();
+    }
+    startApp();
+</script>
+</body>
+</html>
