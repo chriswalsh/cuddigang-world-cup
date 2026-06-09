@@ -13,6 +13,14 @@
         #wheel {
             transition: transform 4s cubic-bezier(0.1, 0.8, 0.2, 1);
         }
+        /* Celebration pop-in effect */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col items-center p-4">
@@ -52,7 +60,7 @@
         </div>
 
         <!-- Step 3: Result Modal/Text -->
-        <div id="result-section" class="hidden text-center space-y-4 pt-4 border-t border-slate-200 mt-4">
+        <div id="result-section" class="hidden text-center space-y-4 pt-4 border-t border-slate-200 mt-4 animate-pop">
             <h3 class="text-xl font-semibold text-slate-700">🎉 You Drew:</h3>
             <div id="drawn-team-display" class="text-3xl font-black text-emerald-600 tracking-wide uppercase"></div>
             <p id="rule-notice" class="text-sm italic text-amber-600 font-medium"></p>
@@ -152,9 +160,12 @@
         // Initialize/Sync Database in Real-time
         onValue(ref(db, 'draws'), (snapshot) => {
             currentDBState = snapshot.val() || {};
-            updateAvailableTeams();
-            renderLeaderboard();
-            updateUserFlowStatus();
+            // Only update structural positions if the wheel isn't mid-spin or mid-reveal celebration
+            if (!isSpinning) {
+                updateAvailableTeams();
+                renderLeaderboard();
+                updateUserFlowStatus();
+            }
         });
 
         // Calculate available teams based on what's already taken
@@ -247,12 +258,13 @@
             }
         }
 
-        // --- SPIN LOGIC ---
+        // --- SPIN LOGIC WITH CELEBRATION DELAY ---
         spinBtn.addEventListener('click', () => {
             if (isSpinning || availableTeams.length === 0) return;
             
             isSpinning = true;
             spinBtn.disabled = true;
+            resultSection.classList.add('hidden'); // Hide any previous spin text
 
             const numSegments = availableTeams.length;
             const winningIndex = Math.floor(Math.random() * numSegments);
@@ -264,31 +276,44 @@
 
             canvas.style.transform = `rotate(${totalRotation}deg)`;
 
-            setTimeout(async () => {
-                isSpinning = false;
+            // 1. Wheel deceleration ends (4000ms)
+            setTimeout(() => {
                 
-                canvas.style.transition = 'none';
-                const standardDegrees = (360 - targetAngle - 90) % 360;
-                canvas.style.transform = `rotate(${standardDegrees}deg)`;
-                canvas.offsetHeight; 
-                canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
-
-                const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
-                userDraw.count += 1;
-                userDraw.teams.push(winningTeam);
-
-                await set(ref(db, `draws/${selectedUser}`), userDraw);
-                
+                // Show the winner text instantly on the screen with pop animation
                 resultSection.classList.remove('hidden');
                 drawnTeamDisplay.textContent = winningTeam;
                 
                 if (top6Teams.includes(winningTeam)) {
                     ruleNotice.textContent = "💥 Wow! You drew a Top 6 powerhouse. That counts as your ONLY team!";
                 } else {
-                    ruleNotice.textContent = userDraw.count === 1 ? "You have 1 spin remaining." : "You've drawn your max teams!";
+                    const tempDrawCount = (currentDBState[selectedUser]?.count || 0) + 1;
+                    ruleNotice.textContent = tempDrawCount === 1 ? "You have 1 spin remaining." : "You've drawn your max teams!";
                 }
 
-                updateUserFlowStatus();
+                // 2. DELAY PHASE: Wait 3 additional seconds for family to see the wheel before it alters!
+                setTimeout(async () => {
+                    isSpinning = false;
+                    
+                    // Reset wheel position layout silently
+                    canvas.style.transition = 'none';
+                    const standardDegrees = (360 - targetAngle - 90) % 360;
+                    canvas.style.transform = `rotate(${standardDegrees}deg)`;
+                    canvas.offsetHeight; 
+                    canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.2, 1)';
+
+                    // Now push to Firebase (which triggers wheel segment re-calculation safely)
+                    const userDraw = currentDBState[selectedUser] || { count: 0, teams: [] };
+                    userDraw.count += 1;
+                    userDraw.teams.push(winningTeam);
+
+                    await set(ref(db, `draws/${selectedUser}`), userDraw);
+                    
+                    // Re-sync states
+                    updateAvailableTeams();
+                    renderLeaderboard();
+                    updateUserFlowStatus();
+                }, 3000); 
+
             }, 4000);
         });
 
